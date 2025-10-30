@@ -96,13 +96,17 @@ export default function CreateCoursePage() {
     return !Object.values(newErrors).some(error => error !== '');
   };
 
-  const handleSaveDraft = () => {
+  const saveDraftSilently = () => {
     saveDraft({
       id: courseId,
       step: currentStep,
       data: formData,
       updatedAt: new Date().toISOString(),
     });
+  };
+
+  const handleSaveDraft = () => {
+    saveDraftSilently();
     toast.success('Draft saved successfully');
   };
 
@@ -117,12 +121,12 @@ export default function CreateCoursePage() {
       return;
     }
 
-    handleSaveDraft();
+    saveDraftSilently();
     setCurrentStep(currentStep + 1);
   };
 
   const handlePreviousStep = () => {
-    handleSaveDraft();
+    saveDraftSilently();
     setCurrentStep(currentStep - 1);
   };
 
