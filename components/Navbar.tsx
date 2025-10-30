@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 export function Navbar() {
+  const router = useRouter();
   const { isWalletConnected, walletAddress, connectWallet, disconnectWallet } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -66,7 +68,10 @@ export function Navbar() {
                   align="end"
                   className="bg-gray-900 border-gray-800 text-white"
                 >
-                  <DropdownMenuItem className="hover:bg-gray-800 cursor-pointer">
+                  <DropdownMenuItem
+                    onClick={() => router.push('/dashboard')}
+                    className="hover:bg-gray-800 cursor-pointer"
+                  >
                     Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem className="hover:bg-gray-800 cursor-pointer">
@@ -131,6 +136,10 @@ export function Navbar() {
                   </div>
                   <Button
                     variant="ghost"
+                    onClick={() => {
+                      router.push('/dashboard');
+                      setMobileMenuOpen(false);
+                    }}
                     className="w-full justify-start text-gray-400 hover:text-white"
                   >
                     Dashboard

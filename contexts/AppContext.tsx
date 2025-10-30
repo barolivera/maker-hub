@@ -2,11 +2,18 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
+interface Certificate {
+  courseId: string;
+  mintedAt: string;
+  tokenId: string;
+}
+
 interface AppState {
   isWalletConnected: boolean;
   walletAddress: string | null;
   enrolledCourses: string[];
   completedLessons: Record<string, string[]>;
+  certificates: Certificate[];
 }
 
 interface AppContextType extends AppState {
@@ -14,6 +21,8 @@ interface AppContextType extends AppState {
   disconnectWallet: () => void;
   enrollInCourse: (courseId: string) => void;
   markLessonComplete: (courseId: string, lessonId: string) => void;
+  isCourseCompleted: (courseId: string, totalLessons: number) => boolean;
+  mintCertificate: (courseId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -24,6 +33,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     walletAddress: null,
     enrolledCourses: [],
     completedLessons: {},
+    certificates: [],
   });
 
   useEffect(() => {
@@ -66,12 +76,36 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const markLessonComplete = (courseId: string, lessonId: string) => {
+    setState(prev => {
+      const currentCompleted = prev.completedLessons[courseId] || [];
+      if (currentCompleted.includes(lessonId)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        completedLessons: {
+          ...prev.completedLessons,
+          [courseId]: [...currentCompleted, lessonId],
+        },
+      };
+    });
+  };
+
+  const isCourseCompleted = (courseId: string, totalLessons: number) => {
+    const completed = state.completedLessons[courseId] || [];
+    return completed.length === totalLessons;
+  };
+
+  const mintCertificate = (courseId: string) => {
+    const tokenId = Math.floor(Math.random() * 10000).toString();
+    const certificate: Certificate = {
+      courseId,
+      mintedAt: new Date().toISOString(),
+      tokenId,
+    };
     setState(prev => ({
       ...prev,
-      completedLessons: {
-        ...prev.completedLessons,
-        [courseId]: [...(prev.completedLessons[courseId] || []), lessonId],
-      },
+      certificates: [...prev.certificates, certificate],
     }));
   };
 
@@ -83,6 +117,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         disconnectWallet,
         enrollInCourse,
         markLessonComplete,
+        isCourseCompleted,
+        mintCertificate,
       }}
     >
       {children}
