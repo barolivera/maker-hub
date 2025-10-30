@@ -18,6 +18,9 @@ interface DraftCourse {
 interface AppState {
   isWalletConnected: boolean;
   walletAddress: string | null;
+  walletType: string | null;
+  networkName: string;
+  isConnecting: boolean;
   enrolledCourses: string[];
   completedLessons: Record<string, string[]>;
   certificates: Certificate[];
@@ -29,7 +32,7 @@ interface AppState {
 }
 
 interface AppContextType extends AppState {
-  connectWallet: () => void;
+  connectWallet: (walletType: string) => void;
   disconnectWallet: () => void;
   enrollInCourse: (courseId: string) => void;
   markLessonComplete: (courseId: string, lessonId: string) => void;
@@ -48,6 +51,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>({
     isWalletConnected: false,
     walletAddress: null,
+    walletType: null,
+    networkName: 'Base Network',
+    isConnecting: false,
     enrolledCourses: [],
     completedLessons: {},
     certificates: [],
@@ -73,13 +79,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('makerHubState', JSON.stringify(state));
   }, [state]);
 
-  const connectWallet = () => {
-    const mockAddress = '0x' + Math.random().toString(16).slice(2, 10) + '...' + Math.random().toString(16).slice(2, 6);
-    setState(prev => ({
-      ...prev,
-      isWalletConnected: true,
-      walletAddress: mockAddress,
-    }));
+  const connectWallet = (walletType: string) => {
+    setState(prev => ({ ...prev, isConnecting: true }));
+
+    setTimeout(() => {
+      const mockAddress = '0x' + Math.random().toString(16).slice(2, 10) + '...' + Math.random().toString(16).slice(2, 6);
+      setState(prev => ({
+        ...prev,
+        isWalletConnected: true,
+        walletAddress: mockAddress,
+        walletType,
+        isConnecting: false,
+      }));
+    }, 1000);
   };
 
   const disconnectWallet = () => {
@@ -87,6 +99,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ...prev,
       isWalletConnected: false,
       walletAddress: null,
+      walletType: null,
+      isConnecting: false,
     }));
   };
 

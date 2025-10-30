@@ -3,20 +3,23 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, X, Plus, Award } from 'lucide-react';
+import { Menu, X, Plus, Award, Wallet, LogOut, Network } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { WalletConnectModal } from '@/components/WalletConnectModal';
 
 export function Navbar() {
   const router = useRouter();
-  const { isWalletConnected, walletAddress, connectWallet, disconnectWallet, publishedCourses } = useApp();
+  const { isWalletConnected, walletAddress, walletType, networkName, connectWallet, disconnectWallet, publishedCourses } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [walletModalOpen, setWalletModalOpen] = useState(false);
   const hasPublishedCourses = publishedCourses.length > 0;
 
   return (
@@ -53,55 +56,70 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             {!isWalletConnected ? (
               <Button
-                onClick={connectWallet}
+                onClick={() => setWalletModalOpen(true)}
                 className="bg-teal-500 hover:bg-teal-600 text-white font-medium"
               >
+                <Wallet className="h-4 w-4 mr-2" />
                 Connect Wallet
               </Button>
             ) : (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="border-gray-800 bg-gray-900 hover:bg-gray-800 text-white"
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-900 border border-gray-800 rounded-lg">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <Network className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-300">{networkName}</span>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="border-gray-800 bg-gray-900 hover:bg-gray-800 text-white"
+                    >
+                      <Wallet className="h-4 w-4 mr-2" />
+                      {walletAddress}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    align="end"
+                    className="bg-gray-900 border-gray-800 text-white w-56"
                   >
-                    {walletAddress}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="bg-gray-900 border-gray-800 text-white"
-                >
-                  <DropdownMenuItem
-                    onClick={() => router.push('/dashboard')}
-                    className="hover:bg-gray-800 cursor-pointer"
-                  >
-                    My Learning
-                  </DropdownMenuItem>
-                  {hasPublishedCourses && (
+                    <div className="px-2 py-2 border-b border-gray-800">
+                      <p className="text-xs text-gray-400 mb-1">Connected with {walletType}</p>
+                      <p className="text-sm font-mono text-white">{walletAddress}</p>
+                    </div>
                     <DropdownMenuItem
-                      onClick={() => router.push('/creator')}
+                      onClick={() => router.push('/dashboard')}
+                      className="hover:bg-gray-800 cursor-pointer"
+                    >
+                      My Learning
+                    </DropdownMenuItem>
+                    {hasPublishedCourses && (
+                      <DropdownMenuItem
+                        onClick={() => router.push('/creator')}
+                        className="hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                      >
+                        <Award className="h-4 w-4" />
+                        Creator Dashboard
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      onClick={() => router.push('/create')}
                       className="hover:bg-gray-800 cursor-pointer flex items-center gap-2"
                     >
-                      <Award className="h-4 w-4" />
-                      Creator Dashboard
+                      <Plus className="h-4 w-4" />
+                      Create Course
                     </DropdownMenuItem>
-                  )}
-                  <DropdownMenuItem
-                    onClick={() => router.push('/create')}
-                    className="hover:bg-gray-800 cursor-pointer flex items-center gap-2"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Create Course
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={disconnectWallet}
-                    className="hover:bg-gray-800 cursor-pointer text-red-400"
-                  >
-                    Disconnect
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                    <DropdownMenuSeparator className="bg-gray-800" />
+                    <DropdownMenuItem
+                      onClick={disconnectWallet}
+                      className="hover:bg-gray-800 cursor-pointer text-red-400 flex items-center gap-2"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Disconnect
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
             )}
           </div>
 
@@ -141,17 +159,23 @@ export function Navbar() {
               {!isWalletConnected ? (
                 <Button
                   onClick={() => {
-                    connectWallet();
+                    setWalletModalOpen(true);
                     setMobileMenuOpen(false);
                   }}
                   className="w-full bg-teal-500 hover:bg-teal-600 text-white font-medium"
                 >
+                  <Wallet className="h-4 w-4 mr-2" />
                   Connect Wallet
                 </Button>
               ) : (
                 <div className="space-y-2">
-                  <div className="px-3 py-2 text-sm text-gray-400">
-                    {walletAddress}
+                  <div className="px-3 py-2 bg-gray-900 border border-gray-800 rounded-lg">
+                    <p className="text-xs text-gray-400 mb-1">Connected with {walletType}</p>
+                    <p className="text-sm text-gray-400 font-mono">{walletAddress}</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <div className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-xs text-gray-400">{networkName}</span>
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
@@ -191,8 +215,9 @@ export function Navbar() {
                       disconnectWallet();
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full justify-start text-red-400 hover:text-red-300"
+                    className="w-full justify-start text-red-400 hover:text-red-300 flex items-center gap-2"
                   >
+                    <LogOut className="h-4 w-4" />
                     Disconnect
                   </Button>
                 </div>
@@ -201,6 +226,12 @@ export function Navbar() {
           </div>
         </div>
       )}
+
+      <WalletConnectModal
+        isOpen={walletModalOpen}
+        onClose={() => setWalletModalOpen(false)}
+        onConnect={connectWallet}
+      />
     </nav>
   );
 }
