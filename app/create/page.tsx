@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Save, Plus, Edit, Trash2, ChevronUp, ChevronDown, Video, FileText, Clock } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Plus, Edit, Trash2, ChevronUp, ChevronDown, Video, FileText, Clock, Eye, BookOpen, Users, Award, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 
 export default function CreateCoursePage() {
   const router = useRouter();
-  const { isWalletConnected, walletAddress, saveDraft, getDraft } = useApp();
+  const { isWalletConnected, walletAddress, saveDraft, getDraft, publishCourse } = useApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [courseId] = useState(() => `course-${Date.now()}`);
 
@@ -47,6 +47,12 @@ export default function CreateCoursePage() {
   const [editingLesson, setEditingLesson] = useState<CreatorLesson | undefined>();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [lessonToDelete, setLessonToDelete] = useState<string | null>(null);
+  const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
+  const [publishOptions, setPublishOptions] = useState({
+    featured: false,
+    enableReviews: true,
+    termsAccepted: false,
+  });
 
   useEffect(() => {
     if (!isWalletConnected) {
@@ -201,6 +207,30 @@ export default function CreateCoursePage() {
       default:
         return null;
     }
+  };
+
+  const handlePublish = () => {
+    if (!publishOptions.termsAccepted) {
+      toast.error('Please accept the terms and creator agreement');
+      return;
+    }
+    setPublishConfirmOpen(true);
+  };
+
+  const confirmPublish = () => {
+    const courseData: CreatorCourseData = {
+      id: courseId,
+      ...formData,
+      creatorAddress: walletAddress || '',
+      createdAt: new Date().toISOString(),
+      featured: publishOptions.featured,
+      enableReviews: publishOptions.enableReviews,
+    };
+
+    publishCourse(courseData);
+    toast.success('Course published successfully!');
+    setPublishConfirmOpen(false);
+    router.push('/creator');
   };
 
   if (!isWalletConnected) {
@@ -536,13 +566,184 @@ export default function CreateCoursePage() {
           )}
 
           {currentStep === 3 && (
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Review & Publish Coming Next
-              </h2>
-              <p className="text-gray-400">
-                Preview your course before publishing
-              </p>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Review & Publish</h2>
+                <p className="text-gray-400">Preview your course before publishing</p>
+              </div>
+
+              <div className="bg-teal-500/10 border border-teal-500/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-teal-500 mb-2">
+                  <Eye className="h-5 w-5" />
+                  <span className="font-semibold">Preview Mode</span>
+                </div>
+                <p className="text-sm text-gray-400">
+                  This is how students will see your course
+                </p>
+              </div>
+
+              <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 space-y-6">
+                <div className="relative h-48 bg-gradient-to-br from-teal-500 to-blue-600 rounded-lg overflow-hidden">
+                  {formData.coverImageUrl ? (
+                    <img
+                      src={formData.coverImageUrl}
+                      alt={formData.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <BookOpen className="h-16 w-16 text-white/30" />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <h3 className="text-3xl font-bold text-white mb-2">{formData.title}</h3>
+                  <p className="text-gray-400">{formData.shortDescription}</p>
+                </div>
+
+                <div className="flex items-center gap-6 text-sm">
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <BookOpen className="h-4 w-4" />
+                    <span>{formData.lessons.length} lessons</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Clock className="h-4 w-4" />
+                    <span>{getTotalDuration()} minutes</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-gray-400">
+                    <Award className="h-4 w-4" />
+                    <span className="capitalize">{formData.difficulty}</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-gray-700">
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-teal-500">
+                      ${formData.price} USDC
+                    </span>
+                    <span className="text-sm text-gray-400 px-3 py-1 bg-gray-700 rounded">
+                      {formData.category}
+                    </span>
+                  </div>
+                </div>
+
+                {formData.learningOutcomes.filter(o => o).length > 0 && (
+                  <div className="pt-4 border-t border-gray-700">
+                    <h4 className="font-semibold text-white mb-3">What you'll learn:</h4>
+                    <ul className="space-y-2">
+                      {formData.learningOutcomes.filter(o => o).map((outcome, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-300">
+                          <span className="text-teal-500 mt-1">✓</span>
+                          <span>{outcome}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="pt-4 border-t border-gray-700">
+                  <h4 className="font-semibold text-white mb-3">Course Content:</h4>
+                  <div className="space-y-2">
+                    {formData.lessons.map((lesson) => (
+                      <div key={lesson.id} className="flex items-center justify-between p-3 bg-gray-900 rounded">
+                        <div className="flex items-center gap-3">
+                          <span className="text-gray-500">{lesson.number}.</span>
+                          <span className="text-gray-300">{lesson.title}</span>
+                          {lesson.isFree && (
+                            <span className="text-xs px-2 py-0.5 bg-teal-500/20 text-teal-500 rounded">
+                              FREE
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-500">{lesson.duration} min</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(1)}
+                  className="border-gray-700 hover:bg-gray-800"
+                >
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Details
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentStep(2)}
+                  className="border-gray-700 hover:bg-gray-800"
+                >
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  Edit Curriculum
+                </Button>
+              </div>
+
+              <div className="space-y-4 pt-6 border-t border-gray-800">
+                <h4 className="font-semibold text-white">Publishing Options</h4>
+
+                <div className="space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={publishOptions.featured}
+                      onChange={(e) => setPublishOptions({ ...publishOptions, featured: e.target.checked })}
+                      className="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-800 text-teal-500 focus:ring-teal-500"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="featured" className="text-white cursor-pointer flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-yellow-500" />
+                        List as Featured
+                        <span className="text-xs text-gray-400">(pay $10 boost)</span>
+                      </Label>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Get priority placement in course listings
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="enableReviews"
+                      checked={publishOptions.enableReviews}
+                      onChange={(e) => setPublishOptions({ ...publishOptions, enableReviews: e.target.checked })}
+                      className="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-800 text-teal-500 focus:ring-teal-500"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="enableReviews" className="text-white cursor-pointer">
+                        Enable student reviews
+                      </Label>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Allow students to rate and review your course
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3">
+                    <input
+                      type="checkbox"
+                      id="termsAccepted"
+                      checked={publishOptions.termsAccepted}
+                      onChange={(e) => setPublishOptions({ ...publishOptions, termsAccepted: e.target.checked })}
+                      className="mt-1 h-4 w-4 rounded border-gray-700 bg-gray-800 text-teal-500 focus:ring-teal-500"
+                    />
+                    <div className="flex-1">
+                      <Label htmlFor="termsAccepted" className="text-white cursor-pointer">
+                        Accept terms & creator agreement
+                        <span className="text-red-500 ml-1">*</span>
+                      </Label>
+                      <p className="text-xs text-gray-400 mt-1">
+                        You agree to the platform terms and creator responsibilities
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
@@ -576,13 +777,22 @@ export default function CreateCoursePage() {
               >
                 Cancel
               </Button>
-              {currentStep < 3 && (
+              {currentStep < 3 ? (
                 <Button
                   onClick={handleNextStep}
                   className="bg-teal-500 hover:bg-teal-600"
                 >
                   Next: {currentStep === 1 ? 'Lessons' : 'Review'}
                   <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  onClick={handlePublish}
+                  className="bg-teal-500 hover:bg-teal-600"
+                  disabled={!publishOptions.termsAccepted}
+                >
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Publish Course
                 </Button>
               )}
             </div>
@@ -614,6 +824,32 @@ export default function CreateCoursePage() {
                 className="bg-red-500 hover:bg-red-600"
               >
                 Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={publishConfirmOpen} onOpenChange={setPublishConfirmOpen}>
+          <AlertDialogContent className="bg-gray-900 border-gray-800">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-teal-500" />
+                Ready to publish?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400 space-y-2">
+                <p>Your course will be live immediately and visible to all students.</p>
+                <p>You can edit it later from your creator dashboard.</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-gray-700 hover:bg-gray-800">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmPublish}
+                className="bg-teal-500 hover:bg-teal-600"
+              >
+                Confirm & Publish
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

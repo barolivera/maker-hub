@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Plus, Award } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,8 +15,9 @@ import {
 
 export function Navbar() {
   const router = useRouter();
-  const { isWalletConnected, walletAddress, connectWallet, disconnectWallet } = useApp();
+  const { isWalletConnected, walletAddress, connectWallet, disconnectWallet, publishedCourses } = useApp();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const hasPublishedCourses = publishedCourses.length > 0;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-gray-800 bg-gray-950/95 backdrop-blur supports-[backdrop-filter]:bg-gray-950/80">
@@ -37,12 +38,15 @@ export function Navbar() {
               >
                 Browse
               </Link>
-              <Link
-                href="/create"
-                className="text-gray-400 hover:text-white transition-colors text-sm font-medium"
-              >
-                Create Course
-              </Link>
+              {isWalletConnected && (
+                <Link
+                  href="/create"
+                  className="text-gray-400 hover:text-white transition-colors text-sm font-medium flex items-center gap-1"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create Course
+                </Link>
+              )}
             </div>
           </div>
 
@@ -72,10 +76,23 @@ export function Navbar() {
                     onClick={() => router.push('/dashboard')}
                     className="hover:bg-gray-800 cursor-pointer"
                   >
-                    Dashboard
+                    My Learning
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-gray-800 cursor-pointer">
-                    Profile
+                  {hasPublishedCourses && (
+                    <DropdownMenuItem
+                      onClick={() => router.push('/creator')}
+                      className="hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                    >
+                      <Award className="h-4 w-4" />
+                      Creator Dashboard
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuItem
+                    onClick={() => router.push('/create')}
+                    className="hover:bg-gray-800 cursor-pointer flex items-center gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Create Course
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={disconnectWallet}
@@ -111,13 +128,15 @@ export function Navbar() {
             >
               Browse
             </Link>
-            <Link
-              href="/create"
-              className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-white transition-colors"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Create Course
-            </Link>
+            {isWalletConnected && (
+              <Link
+                href="/create"
+                className="block px-3 py-2 text-base font-medium text-gray-400 hover:text-white transition-colors"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Create Course
+              </Link>
+            )}
             <div className="pt-4">
               {!isWalletConnected ? (
                 <Button
@@ -142,13 +161,29 @@ export function Navbar() {
                     }}
                     className="w-full justify-start text-gray-400 hover:text-white"
                   >
-                    Dashboard
+                    My Learning
                   </Button>
+                  {hasPublishedCourses && (
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        router.push('/creator');
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full justify-start text-gray-400 hover:text-white"
+                    >
+                      Creator Dashboard
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
+                    onClick={() => {
+                      router.push('/create');
+                      setMobileMenuOpen(false);
+                    }}
                     className="w-full justify-start text-gray-400 hover:text-white"
                   >
-                    Profile
+                    Create Course
                   </Button>
                   <Button
                     variant="ghost"
