@@ -1,6 +1,8 @@
 import { Course } from './courses';
 import { LessonContent } from './lessons';
 
+export type PaymentModel = 'free' | 'upfront' | 'deferred';
+
 export interface CreatorCourseData {
   id: string;
   title: string;
@@ -9,6 +11,9 @@ export interface CreatorCourseData {
   category: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   price: number;
+  paymentModel: PaymentModel;
+  paymentToken?: string;
+  escrowId?: number;
   coverImageUrl: string;
   creator: string;
   creatorBio: string;
@@ -16,6 +21,9 @@ export interface CreatorCourseData {
   lessons: CreatorLesson[];
   createdAt: string;
   published: boolean;
+  featured?: boolean;
+  enableReviews?: boolean;
+  creatorAddress: string;
 }
 
 export interface CreatorLesson {

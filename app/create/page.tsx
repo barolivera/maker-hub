@@ -31,6 +31,7 @@ export default function CreateCoursePage() {
     category: '',
     difficulty: 'Beginner' as 'Beginner' | 'Intermediate' | 'Advanced',
     price: 15,
+    paymentModel: 'upfront' as 'free' | 'upfront' | 'deferred',
     coverImageUrl: '',
     learningOutcomes: ['', '', '', ''],
     lessons: [] as CreatorLesson[],
@@ -367,28 +368,75 @@ export default function CreateCoursePage() {
 
               <div>
                 <Label className="text-white">
-                  Price (USDC) <span className="text-red-500">*</span>
+                  Payment Model <span className="text-red-500">*</span>
                 </Label>
-                <div className="mt-3 space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-teal-500">
-                      ${formData.price} USDC
-                    </span>
+                <RadioGroup
+                  value={formData.paymentModel}
+                  onValueChange={(value: any) => setFormData({ ...formData, paymentModel: value })}
+                  className="mt-3 space-y-3"
+                >
+                  <div className="flex items-start space-x-3 p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                    <RadioGroupItem value="free" id="free" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="free" className="text-white cursor-pointer font-semibold">
+                        Free Course
+                      </Label>
+                      <p className="text-xs text-gray-400 mt-1">
+                        No payment required. Great for building your audience and reputation.
+                      </p>
+                    </div>
                   </div>
-                  <Slider
-                    value={[formData.price]}
-                    onValueChange={([value]) => setFormData({ ...formData, price: value })}
-                    min={5}
-                    max={50}
-                    step={1}
-                    className="w-full"
-                  />
-                  <div className="flex justify-between text-xs text-gray-400">
-                    <span>$5</span>
-                    <span>$50</span>
+                  <div className="flex items-start space-x-3 p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                    <RadioGroupItem value="upfront" id="upfront" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="upfront" className="text-white cursor-pointer font-semibold">
+                        Upfront Payment
+                      </Label>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Students pay before accessing the course. Payment held in escrow until completion.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-start space-x-3 p-3 bg-gray-800 border border-gray-700 rounded-lg">
+                    <RadioGroupItem value="deferred" id="deferred" className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor="deferred" className="text-white cursor-pointer font-semibold">
+                        Deferred Payment
+                      </Label>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Students can access for free, but must pay once they earn income on the platform.
+                      </p>
+                    </div>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {formData.paymentModel !== 'free' && (
+                <div>
+                  <Label className="text-white">
+                    Price (USDC) <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="mt-3 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-teal-500">
+                        ${formData.price} USDC
+                      </span>
+                    </div>
+                    <Slider
+                      value={[formData.price]}
+                      onValueChange={([value]) => setFormData({ ...formData, price: value })}
+                      min={5}
+                      max={50}
+                      step={1}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>$5</span>
+                      <span>$50</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               <div>
                 <Label htmlFor="coverImageUrl" className="text-white">
@@ -619,9 +667,20 @@ export default function CreateCoursePage() {
 
                 <div className="pt-4 border-t border-gray-700">
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-teal-500">
-                      ${formData.price} USDC
-                    </span>
+                    <div>
+                      {formData.paymentModel === 'free' ? (
+                        <span className="text-2xl font-bold text-green-500">FREE</span>
+                      ) : (
+                        <span className="text-2xl font-bold text-teal-500">
+                          ${formData.price} USDC
+                        </span>
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {formData.paymentModel === 'upfront' && 'Pay upfront via escrow'}
+                        {formData.paymentModel === 'deferred' && 'Pay after earning income'}
+                        {formData.paymentModel === 'free' && 'No payment required'}
+                      </p>
+                    </div>
                     <span className="text-sm text-gray-400 px-3 py-1 bg-gray-700 rounded">
                       {formData.category}
                     </span>
