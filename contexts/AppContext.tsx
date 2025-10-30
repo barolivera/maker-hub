@@ -8,12 +8,24 @@ interface Certificate {
   tokenId: string;
 }
 
+interface DraftCourse {
+  id: string;
+  step: number;
+  data: any;
+  updatedAt: string;
+}
+
 interface AppState {
   isWalletConnected: boolean;
   walletAddress: string | null;
   enrolledCourses: string[];
   completedLessons: Record<string, string[]>;
   certificates: Certificate[];
+  publishedCourses: string[];
+  draftCourses: DraftCourse[];
+  totalEarnings: number;
+  availableBalance: number;
+  pendingBalance: number;
 }
 
 interface AppContextType extends AppState {
@@ -23,6 +35,11 @@ interface AppContextType extends AppState {
   markLessonComplete: (courseId: string, lessonId: string) => void;
   isCourseCompleted: (courseId: string, totalLessons: number) => boolean;
   mintCertificate: (courseId: string) => void;
+  publishCourse: (courseId: string) => void;
+  saveDraft: (draft: DraftCourse) => void;
+  getDraft: (id: string) => DraftCourse | undefined;
+  deleteDraft: (id: string) => void;
+  withdrawEarnings: (amount: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -34,6 +51,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     enrolledCourses: [],
     completedLessons: {},
     certificates: [],
+    publishedCourses: [],
+    draftCourses: [],
+    totalEarnings: 0,
+    availableBalance: 0,
+    pendingBalance: 0,
   });
 
   useEffect(() => {
@@ -109,6 +131,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const publishCourse = (courseId: string) => {
+    setState(prev => ({
+      ...prev,
+      publishedCourses: [...prev.publishedCourses, courseId],
+    }));
+  };
+
+  const saveDraft = (draft: DraftCourse) => {
+    setState(prev => ({
+      ...prev,
+      draftCourses: [
+        ...prev.draftCourses.filter(d => d.id !== draft.id),
+        { ...draft, updatedAt: new Date().toISOString() },
+      ],
+    }));
+  };
+
+  const getDraft = (id: string) => {
+    return state.draftCourses.find(d => d.id === id);
+  };
+
+  const deleteDraft = (id: string) => {
+    setState(prev => ({
+      ...prev,
+      draftCourses: prev.draftCourses.filter(d => d.id !== id),
+    }));
+  };
+
+  const withdrawEarnings = (amount: number) => {
+    setState(prev => ({
+      ...prev,
+      availableBalance: Math.max(0, prev.availableBalance - amount),
+      totalEarnings: prev.totalEarnings,
+    }));
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -119,6 +177,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         markLessonComplete,
         isCourseCompleted,
         mintCertificate,
+        publishCourse,
+        saveDraft,
+        getDraft,
+        deleteDraft,
+        withdrawEarnings,
       }}
     >
       {children}
