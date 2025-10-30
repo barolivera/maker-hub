@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ArrowRight, Save } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Save, Plus, Edit, Trash2, ChevronUp, ChevronDown, Video, FileText, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,8 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useApp } from '@/contexts/AppContext';
 import { COURSE_CATEGORIES, CreatorCourseData, CreatorLesson } from '@/lib/creatorCourses';
+import { LessonEditorModal } from '@/components/LessonEditorModal';
 import { toast } from 'sonner';
 
 export default function CreateCoursePage() {
@@ -40,6 +42,11 @@ export default function CreateCoursePage() {
     fullDescription: '',
     category: '',
   });
+
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [editingLesson, setEditingLesson] = useState<CreatorLesson | undefined>();
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [lessonToDelete, setLessonToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isWalletConnected) {
@@ -98,6 +105,11 @@ export default function CreateCoursePage() {
       return;
     }
 
+    if (currentStep === 2 && formData.lessons.length < 3) {
+      toast.error('Please add at least 3 lessons to proceed');
+      return;
+    }
+
     handleSaveDraft();
     setCurrentStep(currentStep + 1);
   };
@@ -105,6 +117,90 @@ export default function CreateCoursePage() {
   const handlePreviousStep = () => {
     handleSaveDraft();
     setCurrentStep(currentStep - 1);
+  };
+
+  const handleAddLesson = () => {
+    setEditingLesson(undefined);
+    setIsLessonModalOpen(true);
+  };
+
+  const handleEditLesson = (lesson: CreatorLesson) => {
+    setEditingLesson(lesson);
+    setIsLessonModalOpen(true);
+  };
+
+  const handleSaveLesson = (lesson: CreatorLesson) => {
+    if (editingLesson) {
+      setFormData({
+        ...formData,
+        lessons: formData.lessons.map(l => l.id === lesson.id ? lesson : l),
+      });
+    } else {
+      setFormData({
+        ...formData,
+        lessons: [...formData.lessons, { ...lesson, number: formData.lessons.length + 1 }],
+      });
+    }
+    setIsLessonModalOpen(false);
+  };
+
+  const handleDeleteLesson = (lessonId: string) => {
+    setLessonToDelete(lessonId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteLesson = () => {
+    if (lessonToDelete) {
+      const updatedLessons = formData.lessons
+        .filter(l => l.id !== lessonToDelete)
+        .map((l, index) => ({ ...l, number: index + 1 }));
+
+      setFormData({
+        ...formData,
+        lessons: updatedLessons,
+      });
+      toast.success('Lesson deleted');
+    }
+    setDeleteConfirmOpen(false);
+    setLessonToDelete(null);
+  };
+
+  const moveLessonUp = (index: number) => {
+    if (index === 0) return;
+    const newLessons = [...formData.lessons];
+    [newLessons[index - 1], newLessons[index]] = [newLessons[index], newLessons[index - 1]];
+    const reorderedLessons = newLessons.map((l, i) => ({ ...l, number: i + 1 }));
+    setFormData({ ...formData, lessons: reorderedLessons });
+  };
+
+  const moveLessonDown = (index: number) => {
+    if (index === formData.lessons.length - 1) return;
+    const newLessons = [...formData.lessons];
+    [newLessons[index], newLessons[index + 1]] = [newLessons[index + 1], newLessons[index]];
+    const reorderedLessons = newLessons.map((l, i) => ({ ...l, number: i + 1 }));
+    setFormData({ ...formData, lessons: reorderedLessons });
+  };
+
+  const getTotalDuration = () => {
+    return formData.lessons.reduce((total, lesson) => total + lesson.duration, 0);
+  };
+
+  const getContentTypeIcon = (type: string) => {
+    switch (type) {
+      case 'video':
+        return <Video className="h-4 w-4" />;
+      case 'text':
+        return <FileText className="h-4 w-4" />;
+      case 'mixed':
+        return (
+          <div className="flex gap-1">
+            <Video className="h-4 w-4" />
+            <FileText className="h-4 w-4" />
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   if (!isWalletConnected) {
@@ -303,13 +399,139 @@ export default function CreateCoursePage() {
           )}
 
           {currentStep === 2 && (
-            <div className="text-center py-12">
-              <h2 className="text-2xl font-bold text-white mb-4">
-                Curriculum Builder Coming Next
-              </h2>
-              <p className="text-gray-400">
-                This step will allow you to add and organize lessons
-              </p>
+            <div className="space-y-6">
+              <div>
+                <h2 className="text-2xl font-bold text-white mb-2">Build Your Curriculum</h2>
+                <p className="text-gray-400">Add at least 3 lessons to your course</p>
+              </div>
+
+              <div className="space-y-4">
+                {formData.lessons.length === 0 ? (
+                  <div className="text-center py-12 bg-gray-800/50 rounded-lg border border-gray-700 border-dashed">
+                    <FileText className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                    <p className="text-gray-400 mb-4">No lessons added yet</p>
+                    <Button
+                      onClick={handleAddLesson}
+                      className="bg-teal-500 hover:bg-teal-600"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Lesson
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    {formData.lessons.map((lesson, index) => (
+                      <Card
+                        key={lesson.id}
+                        className="bg-gray-800 border-gray-700 p-4 hover:border-gray-600 transition-colors"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <span className="text-lg font-bold text-teal-500">
+                                {lesson.number}.
+                              </span>
+                              <h3 className="text-lg font-semibold text-white">
+                                {lesson.title}
+                              </h3>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-400">
+                              <div className="flex items-center gap-1">
+                                {getContentTypeIcon(lesson.contentType)}
+                                <span className="capitalize">{lesson.contentType}</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-4 w-4" />
+                                <span>{lesson.duration} min</span>
+                              </div>
+                              {lesson.isFree && (
+                                <span className="px-2 py-0.5 bg-teal-500/20 text-teal-500 rounded text-xs">
+                                  FREE
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditLesson(lesson)}
+                              className="text-gray-400 hover:text-white"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteLesson(lesson.id)}
+                              className="text-gray-400 hover:text-red-500"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <div className="flex flex-col gap-1 ml-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => moveLessonUp(index)}
+                                disabled={index === 0}
+                                className="h-6 p-0 w-8 text-gray-400 hover:text-white disabled:opacity-30"
+                              >
+                                <ChevronUp className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => moveLessonDown(index)}
+                                disabled={index === formData.lessons.length - 1}
+                                className="h-6 p-0 w-8 text-gray-400 hover:text-white disabled:opacity-30"
+                              >
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </Card>
+                    ))}
+
+                    <Button
+                      onClick={handleAddLesson}
+                      variant="outline"
+                      className="w-full border-gray-700 hover:bg-gray-800 hover:border-teal-500"
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New Lesson
+                    </Button>
+                  </>
+                )}
+              </div>
+
+              {formData.lessons.length > 0 && (
+                <div className="flex items-center justify-between pt-4 border-t border-gray-800">
+                  <div className="flex gap-6 text-sm">
+                    <div>
+                      <span className="text-gray-400">Total Lessons: </span>
+                      <span className="text-white font-semibold">
+                        {formData.lessons.length}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-gray-400">Total Duration: </span>
+                      <span className="text-white font-semibold">
+                        {getTotalDuration()} minutes
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formData.lessons.length > 0 && formData.lessons.length < 3 && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+                  <p className="text-amber-500 text-sm">
+                    Please add at least {3 - formData.lessons.length} more lesson(s) to proceed
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -366,6 +588,36 @@ export default function CreateCoursePage() {
             </div>
           </div>
         </Card>
+
+        <LessonEditorModal
+          isOpen={isLessonModalOpen}
+          onClose={() => setIsLessonModalOpen(false)}
+          onSave={handleSaveLesson}
+          lesson={editingLesson}
+          lessonNumber={formData.lessons.length + 1}
+        />
+
+        <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+          <AlertDialogContent className="bg-gray-900 border-gray-800">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-white">Delete Lesson</AlertDialogTitle>
+              <AlertDialogDescription className="text-gray-400">
+                Are you sure you want to delete this lesson? This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="border-gray-700 hover:bg-gray-800">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteLesson}
+                className="bg-red-500 hover:bg-red-600"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
